@@ -1,5 +1,22 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
+import ssl
+import certifi
+import urllib.request
+
+def predict_digit(filename):
+    img = tf.keras.preprocessing.image.load_img(filename, target_size=(28, 28), color_mode="grayscale")
+    img_array = tf.keras.preprocessing.image.img_to_array(img)
+    img_array = tf.reshape(img_array, (1, 28, 28, 1)) / 255.0
+    prediction = model.predict(img_array)
+    predicted_digit = tf.argmax(prediction[0])
+    print(f'Predicted Digit: {predicted_digit.numpy()}')
+
+# Create a SSL context object with certificates from certifi
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+
+# Use this context when fetching URLs
+response = urllib.request.urlopen("https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz", context=ssl_context)
 
 # Load the MNIST dataset
 mnist = tf.keras.datasets.mnist
@@ -54,7 +71,7 @@ def paint(event):
     draw.line([x1, y1, x2, y2], fill="black", width=5)
 
 app = tk.Tk()
-canvas = Canvas(app, width=200, height=200, bg='white')
+canvas = Canvas(app, width=800, height=800, bg='white')
 canvas.pack()
 canvas.bind('<B1-Motion>', paint)
 
@@ -67,11 +84,3 @@ image1 = PIL.Image.new("RGB", (200, 200), (255, 255, 255))
 draw = PIL.ImageDraw.Draw(image1)
 
 app.mainloop()
-
-def predict_digit(filename):
-    img = tf.keras.preprocessing.image.load_img(filename, target_size=(28, 28), color_mode="grayscale")
-    img_array = tf.keras.preprocessing.image.img_to_array(img)
-    img_array = tf.reshape(img_array, (1, 28, 28, 1)) / 255.0
-    prediction = model.predict(img_array)
-    predicted_digit = tf.argmax(prediction[0])
-    print(f'Predicted Digit: {predicted_digit.numpy()}')
