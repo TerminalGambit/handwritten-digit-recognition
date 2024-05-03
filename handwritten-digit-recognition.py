@@ -1,5 +1,9 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers, models, callbacks
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import tkinter as tk
+from tkinter import Canvas
+import PIL.Image, PIL.ImageDraw
 import ssl
 import certifi
 import urllib.request
@@ -24,20 +28,28 @@ mnist = tf.keras.datasets.mnist
 
 # Normalize the pixel values of the images from [0, 255] to [0, 1]
 train_images, test_images = train_images / 255.0, test_images / 255.0
-
-# Reshape images to fit the CNN input structure
 train_images = train_images.reshape((60000, 28, 28, 1))
 test_images = test_images.reshape((10000, 28, 28, 1))
 
-# Define the CNN model
+# Data augmentation generator
+datagen = ImageDataGenerator(
+    rotation_range=10,
+    zoom_range=0.1,
+    width_shift_range=0.1,
+    height_shift_range=0.1
+)
+
+# Define the CNN model with added dropout layers
 model = models.Sequential([
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    layers.Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
     layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Dropout(0.25),
+    layers.Conv2D(128, (3, 3), activation='relu'),
     layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Dropout(0.25),
     layers.Flatten(),
-    layers.Dense(64, activation='relu'),
+    layers.Dense(128, activation='relu'),
+    layers.Dropout(0.5),
     layers.Dense(10, activation='softmax')
 ])
 
@@ -46,21 +58,22 @@ model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
-# Train the model
-model.fit(train_images, train_labels, epochs=5, validation_split=0.1)
+# Early stopping callback
+early_stopping = callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-import tkinter as tk
-from tkinter import Canvas
-import PIL.Image, PIL.ImageDraw
+# Train the model using the data generator
+model.fit(datagen.flow(train_images, train_labels, batch_size=32),
+          epochs=50,
+          validation_data=(test_images, test_labels),
+          callbacks=[early_stopping])
 
+# UI setup with Tkinter
 def save():
-    # Save the current canvas to an image and predict the digit
     filename = "user_digit.jpg"
     image1.save(filename)
     predict_digit(filename)
 
 def clear():
-    # Clear the drawing canvas
     canvas.delete("all")
     draw.rectangle((0, 0, 200, 200), fill=(0, 0, 0, 0))
 
